@@ -14,6 +14,13 @@ import (
 	"github.com/1Mochiyuki/Catbox2Embed/fileupload"
 )
 
+	/*
+		TODO: 
+			store abs path and file name separately (will need custom struct)
+
+	*/
+
+
 func newUploadFileSection(container *fyne.Container, label *widget.Label) fyne.Widget {
 
 	if label == nil {
@@ -101,7 +108,7 @@ func main() {
 				panic(err)
 			}
 			sizeInMib := (fileInfo.Size() / 1024) / 1024
-			if sizeInMib >= 200 {
+			if sizeInMib > 200 {
 				dialog.ShowError(fmt.Errorf("Size must be under 200 MiB. file was: %v MiB", sizeInMib), window)
 				continue
 			}
@@ -121,7 +128,7 @@ func main() {
 	if len(mainContainer.Objects) >= 0 {
 		fmt.Println("nothing in ui, adding instructions")
 
-		instructions := NewInstructions("Click or drag files to begin", func() {
+		instructions := NewInstructions("Click or drag files to begin. Must be 200 MiB or under", func() {
 			fileUploadSection := newUploadFileSection(mainContainer, nil)
 			mainContainer.Add(fileUploadSection)
 			window.SetContent(mainContainer)
