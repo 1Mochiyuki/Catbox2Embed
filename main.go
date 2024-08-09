@@ -21,6 +21,8 @@ import (
 
 */
 
+//var NOTIFICATIONS_ENABLED bool = true
+
 func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 	ctrlE := &desktop.CustomShortcut{
 		KeyName:  fyne.KeyE,
@@ -29,6 +31,7 @@ func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 	window.Canvas().AddShortcut(ctrlE, func(shortcut fyne.Shortcut) {
 		fmt.Println("copying links")
 		var links string
+		var linksCount int
 		for _, v := range con.Objects {
 
 			if reflect.TypeOf(v) == reflect.TypeOf(&fileupload.FileUploadWidget{}) {
@@ -38,10 +41,17 @@ func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 				}
 
 				links += uploadWidget.FileName.Label.Text + "\n"
+				linksCount += 1
 				fmt.Printf("current links: %v\n", links)
 			}
 		}
 		window.Clipboard().SetContent(links)
+		if fyne.CurrentApp().Preferences().Bool("notifications_enabled") {
+
+			fyne.CurrentApp().SendNotification(fyne.NewNotification("Copy All", fmt.Sprintf("Copied %v links", linksCount)))
+		}
+		links = ""
+		linksCount = 0
 	})
 }
 
@@ -53,7 +63,10 @@ func newUploadFileSection(app fyne.App, window fyne.Window, con *fyne.Container,
 	cancelBtn := widget.NewButtonWithIcon("", theme.ContentClearIcon(), nil)
 	openFileBtn := widget.NewButtonWithIcon("", theme.FolderNewIcon(), nil)
 	copyTextBtn := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
-		app.SendNotification(fyne.NewNotification("Copy", fmt.Sprintf("Copied: %s successfully", fileNameLabel.Label.Text)))
+		if app.Preferences().Bool("notifications_enabled") {
+
+			app.SendNotification(fyne.NewNotification("Copy", fmt.Sprintf("Copied: %s successfully", fileNameLabel.Label.Text)))
+		}
 		window.Clipboard().SetContent(fileNameLabel.Label.Text)
 	})
 
@@ -91,21 +104,56 @@ var FILE_SIZE_REQUIREMENT = 200
 
 func main() {
 
+	baseNotificationOnResource, err := fyne.LoadResourceFromPath("C:\\GoProjects\\Catbox2Embed\\resources\\notifications.svg")
+	if err != nil {
+		panic(err)
+	}
+	baseNotificationOffResource, err := fyne.LoadResourceFromPath("C:\\GoProjects\\Catbox2Embed\\resources\\notifications_off.svg")
+	if err != nil {
+		panic(err)
+	}
+
+	notificationOnIcon := theme.NewThemedResource(baseNotificationOnResource)
+	notificationOffIcon := theme.NewThemedResource(baseNotificationOffResource)
+	var icon fyne.Resource
+	
 	a := app.NewWithID("Catbox2Embed")
+	a.Preferences().SetBool("notifications_enabled", true)
+	
+	fmt.Println("setting pref")
+	if a.Preferences().Bool("notifications_enabled") {
+		icon = notificationOnIcon
+	} else {
+		icon = notificationOffIcon
+	}
+
 
 	window := a.NewWindow("Catbox2Embed")
 	window.Resize(fyne.NewSize(600, 500))
 
-	toolbar := widget.NewToolbar(
-		widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
-			fmt.Println("New document")
-		}),
-		widget.NewToolbarSeparator(),
-		
-	)
-	mainContainer := container.NewVBox()
-	
+	notificationButton := widget.NewToolbarAction(icon, func() {})
+	notificationButton.OnActivated = func() {
+		fmt.Printf("notifications pref: %v\n", a.Preferences().Bool("notifications_enabled"))
 
+		if a.Preferences().Bool("notifications_enabled") {
+			fmt.Println("notifications off")
+			a.Preferences().SetBool("notifications_enabled", false)
+			notificationButton.SetIcon(notificationOffIcon)
+			return
+		} else {
+			fmt.Println("notifications on")
+			a.Preferences().SetBool("notifications_enabled", true)
+			notificationButton.SetIcon(notificationOnIcon)
+			return
+		}
+	}
+
+	toolbar := widget.NewToolbar()
+
+	mainContainer := container.NewVBox()
+	createNewFileUploadSectionBtn := widget.NewToolbarAction(theme.ContentAddIcon(), func() {
+		mainContainer.Add(newUploadFileSection(a, window, mainContainer, fileupload.DEFAULT_LABEL_TEXT))
+	})
 	copyAllToolbarAction := widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
 		var links string
 		for _, v := range mainContainer.Objects {
@@ -125,18 +173,16 @@ func main() {
 	copyAllToolbarAction.Disable()
 
 	helpToolbarAction := widget.NewToolbarAction(theme.HelpIcon(), func() {
-		dialog.ShowInformation("Shortcuts","Shortcuts:\nCopy all links: Ctrl + E", window)
+		dialog.ShowInformation("Shortcuts", "Shortcuts:\nCopy all links: Ctrl + E", window)
 	})
-
-
+	toolbar.Append(createNewFileUploadSectionBtn)
+	toolbar.Append(widget.NewToolbarSeparator())
 	toolbar.Append(copyAllToolbarAction)
 	toolbar.Append(widget.NewToolbarSpacer())
+	toolbar.Append(notificationButton)
 	toolbar.Append(helpToolbarAction)
 	content := container.NewBorder(toolbar, nil, nil, nil)
 	mainContainer.Add(content)
-
-
-	
 
 	uploadAllBtn := widget.NewButton("Upload All", func() {})
 	uploadAllBtn.OnTapped = func() {
@@ -146,20 +192,26 @@ func main() {
 				uploadWidget := v.(*fileupload.FileUploadWidget)
 
 				uploadWidget.StartUploadButton.OnTapped()
+				if copyAllToolbarAction.Disabled() {
+					copyAllToolbarAction.Enable()
+				}
 			}
 		}
 	}
 	clearAllBtn := widget.NewButton("Clear All", func() {})
 
 	clearAllBtn.OnTapped = func() {
-		newSlice := mainContainer.Objects[1:]
+		newSlice := mainContainer.Objects[3:]
 		fmt.Printf("len of mainContainer obj: %v\n", len(mainContainer.Objects))
 		fmt.Printf("len of new slice: %v\n", len(newSlice))
 
 		for i := 0; i < len(newSlice); i++ {
 			mainContainer.Remove(mainContainer.Objects[len(mainContainer.Objects)-1])
 		}
-		mainContainer.Add(newUploadFileSection(a, window, mainContainer, fileupload.DEFAULT_LABEL_TEXT))
+		if !copyAllToolbarAction.Disabled() {
+			copyAllToolbarAction.Disable()
+		}
+		//mainContainer.Add(newUploadFileSection(a, window, mainContainer, fileupload.DEFAULT_LABEL_TEXT))
 	}
 
 	hbox := container.NewAdaptiveGrid(2, uploadAllBtn, clearAllBtn)
@@ -184,7 +236,8 @@ func main() {
 		}
 		if len(mainContainer.Objects) > 1 {
 			addCopyAllLinksShortcut(window, mainContainer)
-			window.SetContent(mainContainer)
+			scrollContainer := container.NewVScroll(mainContainer)
+			window.SetContent(scrollContainer)
 		}
 
 	})
@@ -194,7 +247,8 @@ func main() {
 		instructions := NewInstructions(fmt.Sprintf("Click or drag files to begin. Must be %v MiB or lower\nPress Ctrl + E while window is focused to copy all links", FILE_SIZE_REQUIREMENT), func() {
 			fileUploadSection := newUploadFileSection(a, window, mainContainer, fileupload.DEFAULT_LABEL_TEXT)
 			mainContainer.Add(fileUploadSection)
-			window.SetContent(mainContainer)
+			scrollContainer := container.NewVScroll(mainContainer)
+			window.SetContent(scrollContainer)
 		})
 
 		window.SetContent(instructions)

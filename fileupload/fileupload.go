@@ -71,7 +71,6 @@ func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUpl
 		FileName:           fileName,
 	}
 
-	//item.FileName.Label.Alignment = fyne.TextAlignCenter
 	copyTextButton.Disable()
 	cancelUploadButton.OnTapped = func() {
 
@@ -92,6 +91,7 @@ func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUpl
 		//go uploadToCatbox(fileName)
 		if copyTextButton.Disabled() {
 			copyTextButton.Enable()
+
 		}
 	}
 
@@ -117,6 +117,6 @@ func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUpl
 }
 
 func (item *FileUploadWidget) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewHBox(item.CancelUploadButton, item.StartUploadButton, item.OpenFileButton, item.CopyTextButton, item.FileName.Label)
+	c := container.NewHBox(item.CancelUploadButton /* item.StartUploadButton, */, item.OpenFileButton, item.CopyTextButton, item.FileName.Label)
 	return widget.NewSimpleRenderer(c)
 }
