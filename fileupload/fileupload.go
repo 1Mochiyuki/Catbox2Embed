@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/sqweek/dialog"
+	"github.com/wabarc/go-catbox"
 )
 
 type FileUploadWidget struct {
@@ -48,12 +49,12 @@ func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUpl
 		}
 		filePath := fileName.Text
 		fmt.Printf("uploading: %s\n", filePath)
-		/* if url, err := catbox.New(nil).Upload(filePath); err != nil {
+		if url, err := catbox.New(nil).Upload(filePath); err != nil {
 			fmt.Printf("\ncatbox: %v\n", err)
 			return
 		} else {
-			fmt.Printf("\nurl: %s\npath: %s", url, filePath)
-		} */
+			fmt.Printf("\nurl: https://embeds.video/%s\npath: %s", url, filePath)
+		}
 	}
 
 	openFileButton.OnTapped = func() {

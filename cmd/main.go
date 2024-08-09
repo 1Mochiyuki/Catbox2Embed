@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/1Mochiyuki/Catbox2Embed/fileupload"
@@ -93,19 +94,26 @@ func main() {
 	fmt.Printf("len of mainContainer obj: %v\n", len(mainContainer.Objects))
 
 	window.SetOnDropped(func(p fyne.Position, u []fyne.URI) {
-		window.SetContent(mainContainer)
+		
 		for _, v := range u {
 			fileInfo, err := os.Stat(v.Path())
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("file: %s\nsize of file: %v MiB\n", v.Path(), (fileInfo.Size()/1024)/1024)
+			sizeInMib := (fileInfo.Size() / 1024) / 1024
+			if sizeInMib >= 200 {
+				dialog.ShowError(fmt.Errorf("Size must be under 200 MiB. file was: %v MiB", sizeInMib), window)
+				continue
+			}
+			fmt.Printf("file: %s\nsize of file: %v MiB\n", v.Path(), sizeInMib)
+			
 
 			uploadWidget := newUploadFileSection(mainContainer, widget.NewLabel(v.Path()))
 			mainContainer.Add(uploadWidget)
 		}
 		if len(mainContainer.Objects) > 1 {
-			mainContainer.Add(newUploadFileSection(mainContainer, nil))
+			fmt.Printf("len of main Container obj: %v\n", len(mainContainer.Objects))
+			window.SetContent(mainContainer)
 		}
 
 	})
