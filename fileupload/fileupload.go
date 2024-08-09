@@ -39,6 +39,7 @@ type FileUploadWidget struct {
 	widget.BaseWidget
 	OpenFileButton     *widget.Button
 	StartUploadButton  *widget.Button
+	CopyTextButton     *widget.Button
 	CancelUploadButton *widget.Button
 	FileName           *FileNameLabel
 }
@@ -60,17 +61,18 @@ func uploadToCatbox(fileName *FileNameLabel) {
 	}
 }
 
-func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUploadButton, openFileButton *widget.Button, fileName *FileNameLabel) *FileUploadWidget {
+func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUploadButton, openFileButton, copyTextButton *widget.Button, fileName *FileNameLabel) *FileUploadWidget {
 
 	item := &FileUploadWidget{
 		OpenFileButton:     openFileButton,
 		StartUploadButton:  startUploadButton,
+		CopyTextButton:     copyTextButton,
 		CancelUploadButton: cancelUploadButton,
 		FileName:           fileName,
 	}
 
 	//item.FileName.Label.Alignment = fyne.TextAlignCenter
-
+	copyTextButton.Disable()
 	cancelUploadButton.OnTapped = func() {
 
 		fileName.Label.SetText(DEFAULT_LABEL_TEXT)
@@ -80,11 +82,17 @@ func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUpl
 			container.Remove(container.Objects[objPlace])
 			return
 		}
+		if !copyTextButton.Disabled() {
+			copyTextButton.Disable()
+		}
 		fmt.Println("file name cleared, nothing else happened")
 	}
 
 	startUploadButton.OnTapped = func() {
-		go uploadToCatbox(fileName)
+		//go uploadToCatbox(fileName)
+		if copyTextButton.Disabled() {
+			copyTextButton.Enable()
+		}
 	}
 
 	openFileButton.OnTapped = func() {
@@ -99,14 +107,16 @@ func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUpl
 		nextUploadBtn := widget.NewButtonWithIcon(startUploadButton.Text, startUploadButton.Icon, startUploadButton.OnTapped)
 		nextCancelBtn := widget.NewButtonWithIcon(cancelUploadButton.Text, cancelUploadButton.Icon, cancelUploadButton.OnTapped)
 		nextOpenFileBtn := widget.NewButtonWithIcon(openFileButton.Text, openFileButton.Icon, openFileButton.OnTapped)
+		nextCopyTextBtn := widget.NewButtonWithIcon(copyTextButton.Text, copyTextButton.Icon, copyTextButton.OnTapped)
 
-		container.Add(NewFileUploadWidget(container, nextUploadBtn, nextCancelBtn, nextOpenFileBtn, NewFileNameLabel(DEFAULT_LABEL_TEXT)))
+		container.Add(NewFileUploadWidget(container, nextUploadBtn, nextCancelBtn, nextOpenFileBtn, nextCopyTextBtn, NewFileNameLabel(DEFAULT_LABEL_TEXT)))
 	}
+
 	item.ExtendBaseWidget(item)
 	return item
 }
 
 func (item *FileUploadWidget) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewHBox(item.CancelUploadButton, item.StartUploadButton, item.OpenFileButton, item.FileName.Label)
+	c := container.NewHBox(item.CancelUploadButton, item.StartUploadButton, item.OpenFileButton, item.CopyTextButton, item.FileName.Label)
 	return widget.NewSimpleRenderer(c)
 }
