@@ -49,14 +49,12 @@ func newUploadFileSection(app fyne.App, window fyne.Window, con *fyne.Container,
 
 	fileNameLabel := fileupload.NewFileNameLabel(absPath)
 
-	uploadBtn := widget.NewButtonWithIcon("", theme.MoveUpIcon(), nil)
+	uploadBtn := widget.NewButtonWithIcon("", theme.UploadIcon(), nil)
 	cancelBtn := widget.NewButtonWithIcon("", theme.ContentClearIcon(), nil)
 	openFileBtn := widget.NewButtonWithIcon("", theme.FolderNewIcon(), nil)
 	copyTextBtn := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
-		fmt.Println("bwomp")
-		window.Clipboard().SetContent(fileNameLabel.Label.Text)
 		app.SendNotification(fyne.NewNotification("Copy", fmt.Sprintf("Copied: %s successfully", fileNameLabel.Label.Text)))
-		fmt.Println("should've sent notification")
+		window.Clipboard().SetContent(fileNameLabel.Label.Text)
 	})
 
 	fileUploadWidget := fileupload.NewFileUploadWidget(con, uploadBtn, cancelBtn, openFileBtn, copyTextBtn, fileNameLabel)
@@ -94,9 +92,51 @@ var FILE_SIZE_REQUIREMENT = 200
 func main() {
 
 	a := app.NewWithID("Catbox2Embed")
+
 	window := a.NewWindow("Catbox2Embed")
 	window.Resize(fyne.NewSize(600, 500))
+
+	toolbar := widget.NewToolbar(
+		widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
+			fmt.Println("New document")
+		}),
+		widget.NewToolbarSeparator(),
+		
+	)
 	mainContainer := container.NewVBox()
+	
+
+	copyAllToolbarAction := widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
+		var links string
+		for _, v := range mainContainer.Objects {
+
+			if reflect.TypeOf(v) == reflect.TypeOf(&fileupload.FileUploadWidget{}) {
+				uploadWidget := v.(*fileupload.FileUploadWidget)
+				if uploadWidget.FileName.Label.Text == fileupload.DEFAULT_LABEL_TEXT {
+					continue
+				}
+
+				links += uploadWidget.FileName.Label.Text + "\n"
+				fmt.Printf("current links: %v\n", links)
+			}
+		}
+		window.Clipboard().SetContent(links)
+	})
+	copyAllToolbarAction.Disable()
+
+	helpToolbarAction := widget.NewToolbarAction(theme.HelpIcon(), func() {
+		dialog.ShowInformation("Shortcuts","Shortcuts:\nCopy all links: Ctrl + E", window)
+	})
+
+
+	toolbar.Append(copyAllToolbarAction)
+	toolbar.Append(widget.NewToolbarSpacer())
+	toolbar.Append(helpToolbarAction)
+	content := container.NewBorder(toolbar, nil, nil, nil)
+	mainContainer.Add(content)
+
+
+	
 
 	uploadAllBtn := widget.NewButton("Upload All", func() {})
 	uploadAllBtn.OnTapped = func() {
