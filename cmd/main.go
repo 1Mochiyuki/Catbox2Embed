@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/1Mochiyuki/Catbox2Embed/fileupload"
@@ -16,21 +17,18 @@ import (
 
 /*
 	TODO:
-		store abs path and file name separately (will need custom struct)
+		add copy text button
 
 */
 
-func newUploadFileSection(container *fyne.Container, label *widget.Label) fyne.Widget {
+func newUploadFileSection(container *fyne.Container, absPath string) fyne.Widget {
 
-	if label == nil {
-		fmt.Println("label nil, using default label")
-		label = widget.NewLabel("No file selected")
-	}
+
 	uploadBtn := widget.NewButtonWithIcon("", theme.MoveUpIcon(), nil)
 	cancelBtn := widget.NewButtonWithIcon("", theme.ContentClearIcon(), nil)
 	openFileBtn := widget.NewButtonWithIcon("", theme.FolderNewIcon(), nil)
 
-	fileUploadWidget := fileupload.NewFileUploadWidget(container, uploadBtn, cancelBtn, openFileBtn, label)
+	fileUploadWidget := fileupload.NewFileUploadWidget(container, uploadBtn, cancelBtn, openFileBtn, fileupload.NewFileNameLabel(absPath))
 	return fileUploadWidget
 }
 
@@ -60,6 +58,30 @@ func (i *Instructions) Tapped(ev *fyne.PointEvent) {
 	i.OnTapped()
 }
 
+func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
+	ctrlE := &desktop.CustomShortcut{
+		KeyName: fyne.KeyE,
+		Modifier: fyne.KeyModifierControl,
+	}
+	window.Canvas().AddShortcut(ctrlE, func(shortcut fyne.Shortcut) {
+		fmt.Println("copying links")
+		var links string
+		for _, v := range con.Objects {
+
+			if reflect.TypeOf(v) == reflect.TypeOf(&fileupload.FileUploadWidget{}) {
+				uploadWidget := v.(*fileupload.FileUploadWidget)
+				if uploadWidget.FileName.Label.Text == fileupload.DEFAULT_LABEL_TEXT {
+					continue
+				}
+
+				links += uploadWidget.FileName.Label.Text + "\n"
+				fmt.Printf("current links: %v\n", links)
+			}
+		}
+		window.Clipboard().SetContent(links)
+	})
+}
+
 var FILE_SIZE_REQUIREMENT = 200
 
 func main() {
@@ -68,6 +90,8 @@ func main() {
 	window := a.NewWindow("Catbox2Embed")
 	window.Resize(fyne.NewSize(600, 500))
 	mainContainer := container.NewVBox()
+
+
 	uploadAllBtn := widget.NewButton("Upload All", func() {})
 	uploadAllBtn.OnTapped = func() {
 		for _, v := range mainContainer.Objects {
@@ -89,7 +113,7 @@ func main() {
 		for i := 0; i < len(newSlice); i++ {
 			mainContainer.Remove(mainContainer.Objects[len(mainContainer.Objects)-1])
 		}
-		mainContainer.Add(newUploadFileSection(mainContainer, nil))
+		mainContainer.Add(newUploadFileSection(mainContainer, fileupload.DEFAULT_LABEL_TEXT))
 	}
 
 	hbox := container.NewAdaptiveGrid(2, uploadAllBtn, clearAllBtn)
@@ -109,10 +133,11 @@ func main() {
 				continue
 			}
 
-			uploadWidget := newUploadFileSection(mainContainer, widget.NewLabel(v.Path()))
+			uploadWidget := newUploadFileSection(mainContainer, v.Path())
 			mainContainer.Add(uploadWidget)
 		}
 		if len(mainContainer.Objects) > 1 {
+			addCopyAllLinksShortcut(window, mainContainer)
 			window.SetContent(mainContainer)
 		}
 
@@ -120,8 +145,8 @@ func main() {
 
 	if len(mainContainer.Objects) >= 0 {
 
-		instructions := NewInstructions(fmt.Sprintf("Click or drag files to begin. Must be %v MiB or lower", FILE_SIZE_REQUIREMENT), func() {
-			fileUploadSection := newUploadFileSection(mainContainer, nil)
+		instructions := NewInstructions(fmt.Sprintf("Click or drag files to begin. Must be %v MiB or lower\nPress Ctrl + E while window is focused to copy all links", FILE_SIZE_REQUIREMENT), func() {
+			fileUploadSection := newUploadFileSection(mainContainer, fileupload.DEFAULT_LABEL_TEXT)
 			mainContainer.Add(fileUploadSection)
 			window.SetContent(mainContainer)
 		})
