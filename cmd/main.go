@@ -14,12 +14,11 @@ import (
 	"github.com/1Mochiyuki/Catbox2Embed/fileupload"
 )
 
-	/*
-		TODO: 
-			store abs path and file name separately (will need custom struct)
+/*
+	TODO:
+		store abs path and file name separately (will need custom struct)
 
-	*/
-
+*/
 
 func newUploadFileSection(container *fyne.Container, label *widget.Label) fyne.Widget {
 
@@ -42,7 +41,6 @@ type Instructions struct {
 }
 
 func NewInstructions(instructionsText string, onTapped func()) *Instructions {
-	fmt.Println("here")
 
 	instructions := &Instructions{
 		InstructionsText: instructionsText,
@@ -58,9 +56,11 @@ func (i *Instructions) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(con)
 }
 func (i *Instructions) Tapped(ev *fyne.PointEvent) {
-	fmt.Println("tapped")
+
 	i.OnTapped()
 }
+
+var FILE_SIZE_REQUIREMENT = 200
 
 func main() {
 
@@ -85,12 +85,9 @@ func main() {
 		newSlice := mainContainer.Objects[1:]
 		fmt.Printf("len of mainContainer obj: %v\n", len(mainContainer.Objects))
 		fmt.Printf("len of new slice: %v\n", len(newSlice))
-		for i, v := range newSlice {
-			fmt.Printf("obj of %v @ : %v\n", reflect.TypeOf(v), i+1)
-			fmt.Printf("len of main container obj before deletion: %v\n", len(mainContainer.Objects))
+
+		for i := 0; i < len(newSlice); i++ {
 			mainContainer.Remove(mainContainer.Objects[len(mainContainer.Objects)-1])
-			fmt.Printf("len of main container obj after deletion: %v\n", len(mainContainer.Objects))
-			fmt.Println("----------------------")
 		}
 		mainContainer.Add(newUploadFileSection(mainContainer, nil))
 	}
@@ -98,37 +95,32 @@ func main() {
 	hbox := container.NewAdaptiveGrid(2, uploadAllBtn, clearAllBtn)
 
 	mainContainer.Add(hbox)
-	fmt.Printf("len of mainContainer obj: %v\n", len(mainContainer.Objects))
 
 	window.SetOnDropped(func(p fyne.Position, u []fyne.URI) {
-		
+
 		for _, v := range u {
 			fileInfo, err := os.Stat(v.Path())
 			if err != nil {
 				panic(err)
 			}
 			sizeInMib := (fileInfo.Size() / 1024) / 1024
-			if sizeInMib > 200 {
-				dialog.ShowError(fmt.Errorf("Size must be under 200 MiB. file was: %v MiB", sizeInMib), window)
+			if sizeInMib > int64(FILE_SIZE_REQUIREMENT) {
+				dialog.ShowError(fmt.Errorf("size must be %v MiB or lower. file was: %v MiB", FILE_SIZE_REQUIREMENT, sizeInMib), window)
 				continue
 			}
-			fmt.Printf("file: %s\nsize of file: %v MiB\n", v.Path(), sizeInMib)
-			
 
 			uploadWidget := newUploadFileSection(mainContainer, widget.NewLabel(v.Path()))
 			mainContainer.Add(uploadWidget)
 		}
 		if len(mainContainer.Objects) > 1 {
-			fmt.Printf("len of main Container obj: %v\n", len(mainContainer.Objects))
 			window.SetContent(mainContainer)
 		}
 
 	})
 
 	if len(mainContainer.Objects) >= 0 {
-		fmt.Println("nothing in ui, adding instructions")
 
-		instructions := NewInstructions("Click or drag files to begin. Must be 200 MiB or under", func() {
+		instructions := NewInstructions(fmt.Sprintf("Click or drag files to begin. Must be %v MiB or lower", FILE_SIZE_REQUIREMENT), func() {
 			fileUploadSection := newUploadFileSection(mainContainer, nil)
 			mainContainer.Add(fileUploadSection)
 			window.SetContent(mainContainer)
