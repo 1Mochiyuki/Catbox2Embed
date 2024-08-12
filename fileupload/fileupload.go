@@ -88,7 +88,7 @@ func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUpl
 	}
 
 	startUploadButton.OnTapped = func() {
-		//go uploadToCatbox(fileName)
+		go uploadToCatbox(fileName)
 		if copyTextButton.Disabled() {
 			copyTextButton.Enable()
 

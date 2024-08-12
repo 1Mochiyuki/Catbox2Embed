@@ -21,7 +21,7 @@ import (
 
 */
 
-//var NOTIFICATIONS_ENABLED bool = true
+var NOTIFICATIONS_ENABLED string = "notifications_enabled"
 
 func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 	ctrlE := &desktop.CustomShortcut{
@@ -46,7 +46,7 @@ func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 			}
 		}
 		window.Clipboard().SetContent(links)
-		if fyne.CurrentApp().Preferences().Bool("notifications_enabled") {
+		if fyne.CurrentApp().Preferences().Bool(NOTIFICATIONS_ENABLED) {
 
 			fyne.CurrentApp().SendNotification(fyne.NewNotification("Copy All", fmt.Sprintf("Copied %v links", linksCount)))
 		}
@@ -63,7 +63,7 @@ func newUploadFileSection(app fyne.App, window fyne.Window, con *fyne.Container,
 	cancelBtn := widget.NewButtonWithIcon("", theme.ContentClearIcon(), nil)
 	openFileBtn := widget.NewButtonWithIcon("", theme.FolderNewIcon(), nil)
 	copyTextBtn := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
-		if app.Preferences().Bool("notifications_enabled") {
+		if app.Preferences().Bool(NOTIFICATIONS_ENABLED) {
 
 			app.SendNotification(fyne.NewNotification("Copy", fmt.Sprintf("Copied: %s successfully", fileNameLabel.Label.Text)))
 		}
@@ -116,33 +116,37 @@ func main() {
 	notificationOnIcon := theme.NewThemedResource(baseNotificationOnResource)
 	notificationOffIcon := theme.NewThemedResource(baseNotificationOffResource)
 	var icon fyne.Resource
-	
+
 	a := app.NewWithID("Catbox2Embed")
-	a.Preferences().SetBool("notifications_enabled", true)
+
+	fmt.Printf("pref on start: %v\n", a.Preferences().Bool(NOTIFICATIONS_ENABLED))
+
 	
+
 	fmt.Println("setting pref")
-	if a.Preferences().Bool("notifications_enabled") {
+	if a.Preferences().Bool(NOTIFICATIONS_ENABLED) {
 		icon = notificationOnIcon
+		a.Preferences().SetBool(NOTIFICATIONS_ENABLED, true)
 	} else {
 		icon = notificationOffIcon
+		a.Preferences().SetBool(NOTIFICATIONS_ENABLED, false)
 	}
-
 
 	window := a.NewWindow("Catbox2Embed")
 	window.Resize(fyne.NewSize(600, 500))
 
 	notificationButton := widget.NewToolbarAction(icon, func() {})
 	notificationButton.OnActivated = func() {
-		fmt.Printf("notifications pref: %v\n", a.Preferences().Bool("notifications_enabled"))
+		fmt.Printf("notifications pref: %v\n", a.Preferences().Bool(NOTIFICATIONS_ENABLED))
 
-		if a.Preferences().Bool("notifications_enabled") {
+		if a.Preferences().Bool(NOTIFICATIONS_ENABLED) {
 			fmt.Println("notifications off")
-			a.Preferences().SetBool("notifications_enabled", false)
+			a.Preferences().SetBool(NOTIFICATIONS_ENABLED, false)
 			notificationButton.SetIcon(notificationOffIcon)
 			return
 		} else {
 			fmt.Println("notifications on")
-			a.Preferences().SetBool("notifications_enabled", true)
+			a.Preferences().SetBool(NOTIFICATIONS_ENABLED, true)
 			notificationButton.SetIcon(notificationOnIcon)
 			return
 		}
@@ -181,9 +185,9 @@ func main() {
 	toolbar.Append(widget.NewToolbarSpacer())
 	toolbar.Append(notificationButton)
 	toolbar.Append(helpToolbarAction)
+
 	content := container.NewBorder(toolbar, nil, nil, nil)
 	mainContainer.Add(content)
-
 	uploadAllBtn := widget.NewButton("Upload All", func() {})
 	uploadAllBtn.OnTapped = func() {
 		for _, v := range mainContainer.Objects {
