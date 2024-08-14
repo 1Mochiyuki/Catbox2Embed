@@ -15,8 +15,8 @@ type FileNameLabel struct {
 	AbsPath string
 	Label   *widget.Label
 }
-
-var DEFAULT_LABEL_TEXT = "No file selected"
+const CATBOX_USERHASH = ""
+const DEFAULT_LABEL_TEXT = "No file selected"
 
 func NewFileNameLabel(absPath string) *FileNameLabel {
 	label := widget.NewLabel(absPath)
@@ -51,7 +51,12 @@ func uploadToCatbox(fileName *FileNameLabel) {
 	}
 	filePath := fileName.AbsPath
 	fmt.Printf("uploading: %s\n", filePath)
-	if url, err := catbox.New(nil).Upload(filePath); err != nil {
+
+	catboxClient := catbox.New(nil)
+	if fyne.CurrentApp().Preferences().String(CATBOX_USERHASH) != "" {
+		catboxClient.Userhash = fyne.CurrentApp().Preferences().String(CATBOX_USERHASH)
+	}
+	if url, err := catboxClient.Upload(filePath); err != nil {
 		fmt.Printf("\ncatbox: %v\n", err)
 		return
 	} else {

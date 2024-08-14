@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -23,7 +25,7 @@ import (
 */
 
 const NOTIFICATIONS_ENABLED string = "notifications_enabled"
-const CATBOX_USERHASH = ""
+
 
 func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 	ctrlE := &desktop.CustomShortcut{
@@ -122,7 +124,7 @@ func main() {
 	a := app.NewWithID("Catbox2Embed")
 
 	fmt.Printf("notifications: %v\n", a.Preferences().Bool(NOTIFICATIONS_ENABLED))
-	fmt.Printf("catbox userhash: %s\n", a.Preferences().String(CATBOX_USERHASH))
+	fmt.Printf("catbox userhash: %s\n", a.Preferences().String(fileupload.CATBOX_USERHASH))
 
 	fmt.Println("setting pref")
 	if a.Preferences().Bool(NOTIFICATIONS_ENABLED) {
@@ -180,20 +182,34 @@ func main() {
 	helpToolbarAction := widget.NewToolbarAction(theme.SettingsIcon(), func() {
 		settingsWindow := a.NewWindow("Settings")
 		settingsWindow.Resize(fyne.NewSize(400, 300))
+		settingsWindow.SetFixedSize(true)
 
-		userHash := a.Preferences().String(CATBOX_USERHASH)
+		userHash := a.Preferences().String(fileupload.CATBOX_USERHASH)
 		userHashBinding := binding.BindString(&userHash)
 		userHashEntry := widget.NewEntryWithData(userHashBinding)
 		userHashEntry.SetPlaceHolder("Catbox Userhash")
 		userHashEntry.OnSubmitted = func(text string) {
-			a.Preferences().SetString(CATBOX_USERHASH, text)
+			a.Preferences().SetString(fileupload.CATBOX_USERHASH, text)
 		}
 		userHashEntry.OnChanged = func(text string) {
-			if len(text) > 0 {
-				a.Preferences().SetString(CATBOX_USERHASH, text)
-			fmt.Printf("userhash: %s\n", text)
-
+			textLen := len(text)
+			if textLen > 30 {
+				fmt.Println("userhash too long")
+				userHashEntry.SetValidationError(errors.New("userhash too long"))
+				return
 			}
+			if textLen >= 1 {
+				timer := time.NewTimer(time.Millisecond * 150)
+				go func() {
+					<-timer.C
+					a.Preferences().SetString(fileupload.CATBOX_USERHASH, text)
+					fmt.Printf("userhash: %s\n", text)
+					timer.Stop()
+				}()
+				return
+			}
+			a.Preferences().SetString(fileupload.CATBOX_USERHASH, text)
+			fmt.Println("userhash blank")
 		}
 
 		con := container.NewVBox(userHashEntry)
