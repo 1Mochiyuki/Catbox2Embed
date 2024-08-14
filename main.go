@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
@@ -21,7 +22,8 @@ import (
 
 */
 
-var NOTIFICATIONS_ENABLED string = "notifications_enabled"
+const NOTIFICATIONS_ENABLED string = "notifications_enabled"
+const CATBOX_USERHASH = ""
 
 func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 	ctrlE := &desktop.CustomShortcut{
@@ -100,7 +102,7 @@ func (i *Instructions) Tapped(ev *fyne.PointEvent) {
 	i.OnTapped()
 }
 
-var FILE_SIZE_REQUIREMENT = 200
+const FILE_SIZE_REQUIREMENT = 200
 
 func main() {
 
@@ -119,9 +121,8 @@ func main() {
 
 	a := app.NewWithID("Catbox2Embed")
 
-	fmt.Printf("pref on start: %v\n", a.Preferences().Bool(NOTIFICATIONS_ENABLED))
-
-	
+	fmt.Printf("notifications: %v\n", a.Preferences().Bool(NOTIFICATIONS_ENABLED))
+	fmt.Printf("catbox userhash: %s\n", a.Preferences().String(CATBOX_USERHASH))
 
 	fmt.Println("setting pref")
 	if a.Preferences().Bool(NOTIFICATIONS_ENABLED) {
@@ -137,7 +138,7 @@ func main() {
 
 	notificationButton := widget.NewToolbarAction(icon, func() {})
 	notificationButton.OnActivated = func() {
-		fmt.Printf("notifications pref: %v\n", a.Preferences().Bool(NOTIFICATIONS_ENABLED))
+		//fmt.Printf("notifications pref: %v\n", a.Preferences().Bool(NOTIFICATIONS_ENABLED))
 
 		if a.Preferences().Bool(NOTIFICATIONS_ENABLED) {
 			fmt.Println("notifications off")
@@ -176,8 +177,33 @@ func main() {
 	})
 	copyAllToolbarAction.Disable()
 
-	helpToolbarAction := widget.NewToolbarAction(theme.HelpIcon(), func() {
-		dialog.ShowInformation("Shortcuts", "Shortcuts:\nCopy all links: Ctrl + E", window)
+	helpToolbarAction := widget.NewToolbarAction(theme.SettingsIcon(), func() {
+		settingsWindow := a.NewWindow("Settings")
+		settingsWindow.Resize(fyne.NewSize(400, 300))
+
+		userHash := a.Preferences().String(CATBOX_USERHASH)
+		userHashBinding := binding.BindString(&userHash)
+		userHashEntry := widget.NewEntryWithData(userHashBinding)
+		userHashEntry.SetPlaceHolder("Catbox Userhash")
+		userHashEntry.OnSubmitted = func(text string) {
+			a.Preferences().SetString(CATBOX_USERHASH, text)
+		}
+		userHashEntry.OnChanged = func(text string) {
+			if len(text) > 0 {
+				a.Preferences().SetString(CATBOX_USERHASH, text)
+			fmt.Printf("userhash: %s\n", text)
+
+			}
+		}
+
+		con := container.NewVBox(userHashEntry)
+		shortcutsLabel := widget.NewLabel("Shortcuts:\nCopy all links: Ctrl + E")
+		shortcutsLabel.Alignment = fyne.TextAlignCenter
+		shortcutsLabel.TextStyle.Bold = true
+		con.Add(shortcutsLabel)
+
+		settingsWindow.SetContent(con)
+		settingsWindow.Show()
 	})
 	toolbar.Append(createNewFileUploadSectionBtn)
 	toolbar.Append(widget.NewToolbarSeparator())
@@ -257,6 +283,8 @@ func main() {
 
 		window.SetContent(instructions)
 	}
-
+	window.SetOnClosed(func() {
+		a.Quit()
+	})
 	window.ShowAndRun()
 }
