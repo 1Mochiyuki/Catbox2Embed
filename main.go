@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -16,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/1Mochiyuki/Catbox2Embed/fileupload"
+	"github.com/1Mochiyuki/Catbox2Embed/utils"
 )
 
 /*
@@ -23,9 +25,6 @@ import (
 		add copy text button
 
 */
-
-const NOTIFICATIONS_ENABLED string = "notifications_enabled"
-
 
 func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 	ctrlE := &desktop.CustomShortcut{
@@ -50,7 +49,7 @@ func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 			}
 		}
 		window.Clipboard().SetContent(links)
-		if fyne.CurrentApp().Preferences().Bool(NOTIFICATIONS_ENABLED) {
+		if utils.PreferencesEnabled() {
 
 			fyne.CurrentApp().SendNotification(fyne.NewNotification("Copy All", fmt.Sprintf("Copied %v links", linksCount)))
 		}
@@ -67,7 +66,7 @@ func newUploadFileSection(app fyne.App, window fyne.Window, con *fyne.Container,
 	cancelBtn := widget.NewButtonWithIcon("", theme.ContentClearIcon(), nil)
 	openFileBtn := widget.NewButtonWithIcon("", theme.FolderNewIcon(), nil)
 	copyTextBtn := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
-		if app.Preferences().Bool(NOTIFICATIONS_ENABLED) {
+		if utils.PreferencesEnabled() {
 
 			app.SendNotification(fyne.NewNotification("Copy", fmt.Sprintf("Copied: %s successfully", fileNameLabel.Label.Text)))
 		}
@@ -106,16 +105,19 @@ func (i *Instructions) Tapped(ev *fyne.PointEvent) {
 
 const FILE_SIZE_REQUIREMENT = 200
 
-func main() {
+func isVideoFile(file string) bool {
+	for _, v := range utils.VIDEO_FILE_EXTENSIOSN {
+		return strings.Contains(file, v)
+	}
+	fmt.Println("hello")
+	return false
+}
 
-	baseNotificationOnResource, err := fyne.LoadResourceFromPath("C:\\GoProjects\\Catbox2Embed\\resources\\notifications.svg")
-	if err != nil {
-		panic(err)
-	}
-	baseNotificationOffResource, err := fyne.LoadResourceFromPath("C:\\GoProjects\\Catbox2Embed\\resources\\notifications_off.svg")
-	if err != nil {
-		panic(err)
-	}
+func main() {
+	notificationsOffStr := `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M20 18.69L7.84 6.14 5.27 3.49 4 4.76l2.8 2.8v.01c-.52.99-.8 2.16-.8 3.42v5l-2 2v1h13.73l2 2L21 19.72l-1-1.03zM12 22c1.11 0 2-.89 2-2h-4c0 1.11.89 2 2 2zm6-7.32V11c0-3.08-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68c-.15.03-.29.08-.42.12-.1.03-.2.07-.3.11h-.01c-.01 0-.01 0-.02.01-.23.09-.46.2-.68.31 0 0-.01 0-.01.01L18 14.68z"/></svg>`
+	notificationsOnStr := `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>`
+	baseNotificationOffResource := fyne.NewStaticResource("notifications_off", []byte(notificationsOffStr))
+	baseNotificationOnResource := fyne.NewStaticResource("notifications_on", []byte(notificationsOnStr))
 
 	notificationOnIcon := theme.NewThemedResource(baseNotificationOnResource)
 	notificationOffIcon := theme.NewThemedResource(baseNotificationOffResource)
@@ -123,16 +125,16 @@ func main() {
 
 	a := app.NewWithID("Catbox2Embed")
 
-	fmt.Printf("notifications: %v\n", a.Preferences().Bool(NOTIFICATIONS_ENABLED))
+	fmt.Printf("notifications: %v\n", utils.PreferencesEnabled())
 	fmt.Printf("catbox userhash: %s\n", a.Preferences().String(fileupload.CATBOX_USERHASH))
 
 	fmt.Println("setting pref")
-	if a.Preferences().Bool(NOTIFICATIONS_ENABLED) {
+	if utils.PreferencesEnabled() {
 		icon = notificationOnIcon
-		a.Preferences().SetBool(NOTIFICATIONS_ENABLED, true)
+		a.Preferences().SetBool(utils.NOTIFICATIONS_ENABLED, true)
 	} else {
 		icon = notificationOffIcon
-		a.Preferences().SetBool(NOTIFICATIONS_ENABLED, false)
+		a.Preferences().SetBool(utils.NOTIFICATIONS_ENABLED, false)
 	}
 
 	window := a.NewWindow("Catbox2Embed")
@@ -140,16 +142,15 @@ func main() {
 
 	notificationButton := widget.NewToolbarAction(icon, func() {})
 	notificationButton.OnActivated = func() {
-		//fmt.Printf("notifications pref: %v\n", a.Preferences().Bool(NOTIFICATIONS_ENABLED))
 
-		if a.Preferences().Bool(NOTIFICATIONS_ENABLED) {
+		if utils.PreferencesEnabled() {
 			fmt.Println("notifications off")
-			a.Preferences().SetBool(NOTIFICATIONS_ENABLED, false)
+			a.Preferences().SetBool(utils.NOTIFICATIONS_ENABLED, false)
 			notificationButton.SetIcon(notificationOffIcon)
 			return
 		} else {
 			fmt.Println("notifications on")
-			a.Preferences().SetBool(NOTIFICATIONS_ENABLED, true)
+			a.Preferences().SetBool(utils.NOTIFICATIONS_ENABLED, true)
 			notificationButton.SetIcon(notificationOnIcon)
 			return
 		}
@@ -257,7 +258,7 @@ func main() {
 		if !copyAllToolbarAction.Disabled() {
 			copyAllToolbarAction.Disable()
 		}
-		//mainContainer.Add(newUploadFileSection(a, window, mainContainer, fileupload.DEFAULT_LABEL_TEXT))
+
 	}
 
 	hbox := container.NewAdaptiveGrid(2, uploadAllBtn, clearAllBtn)
@@ -274,6 +275,10 @@ func main() {
 			sizeInMib := (fileInfo.Size() / 1024) / 1024
 			if sizeInMib > int64(FILE_SIZE_REQUIREMENT) {
 				dialog.ShowError(fmt.Errorf("size must be %v MiB or lower. file was: %v MiB", FILE_SIZE_REQUIREMENT, sizeInMib), window)
+				continue
+			}
+			if !isVideoFile(fileInfo.Name()) {
+				dialog.ShowError(errors.New("file is not a video.\nif this is an error, please contact the developer"), window)
 				continue
 			}
 

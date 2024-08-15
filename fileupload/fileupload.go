@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/1Mochiyuki/Catbox2Embed/utils"
 	"github.com/sqweek/dialog"
 	"github.com/wabarc/go-catbox"
 )
@@ -49,6 +50,7 @@ func uploadToCatbox(fileName *FileNameLabel) {
 		fmt.Println("no file selected, not uploading")
 		return
 	}
+	file := fileName.Label.Text
 	filePath := fileName.AbsPath
 	fmt.Printf("uploading: %s\n", filePath)
 
@@ -63,6 +65,10 @@ func uploadToCatbox(fileName *FileNameLabel) {
 		embedLink := fmt.Sprintf("https://embeds.video/%s", url)
 		fmt.Printf("\nurl: %s\npath: %s", embedLink, filePath)
 		fileName.Label.SetText(embedLink)
+		if utils.PreferencesEnabled() {
+			title := fmt.Sprintf("%s Upload Finished", file)
+			fyne.CurrentApp().SendNotification(fyne.NewNotification(title,""))
+		}
 	}
 }
 
@@ -102,7 +108,7 @@ func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUpl
 
 	openFileButton.OnTapped = func() {
 		fmt.Println("set open file tapped func")
-		filename, err := dialog.File().Load()
+		filename, err := dialog.File().Filter("Video Files", utils.VIDEO_FILE_EXTENSIOSN...).Load()
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
 			return
