@@ -2,7 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -76,11 +78,14 @@ func uploadToCatbox(fileName *FileNameLabel) {
 	fmt.Printf("uploading: %s\n", filePath)
 
 	catboxClient := catbox.New(nil)
+	catboxClient.Client.Timeout = time.Duration(fyne.CurrentApp().Preferences().IntWithFallback(utils.TIMEOUT_DURATION_MINUTES, utils.DEFAULT_FALLBACK_TIMEOUT_MINUTES)) * time.Minute
 	if fyne.CurrentApp().Preferences().String(utils.CATBOX_USERHASH) != "" {
 		catboxClient.Userhash = fyne.CurrentApp().Preferences().String(utils.CATBOX_USERHASH)
 	}
+	log.Printf("using userhash: %s", fyne.CurrentApp().Preferences().String(utils.CATBOX_USERHASH))
 	if url, err := catboxClient.Upload(filePath); err != nil {
 		fmt.Printf("\ncatbox: %v\n", err)
+		fyne.CurrentApp().SendNotification(fyne.NewNotification("Error Uploading", err.Error()))
 		return
 	} else {
 		embedLink := fmt.Sprintf("https://embeds.video/%s", url)

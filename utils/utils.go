@@ -8,8 +8,10 @@ import (
 )
 
 const NOTIFICATIONS_ENABLED string = "notifications_enabled"
-const CATBOX_USERHASH = ""
+const CATBOX_USERHASH = "catbox_userhash"
+const DEFAULT_FALLBACK_TIMEOUT_MINUTES = 30
 const FILE_SIZE_REQUIREMENT = 200
+const TIMEOUT_DURATION_MINUTES = "timeout_minutes"
 
 var VIDEO_FILE_EXTENSIOSN []string = []string{
 	"mp4",

@@ -55,7 +55,7 @@ func main() {
 	window := a.NewWindow("Catbox2Embed")
 	window.Resize(fyne.NewSize(600, 500))
 	mainContainer := container.NewVBox()
-
+	fmt.Printf("timeout duration: %v minutes", a.Preferences().Int(utils.TIMEOUT_DURATION_MINUTES))
 	copyAllToolbarAction := widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
 		var links string
 		for _, v := range mainContainer.Objects {

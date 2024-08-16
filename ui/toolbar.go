@@ -3,7 +3,10 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
+	"regexp"
+	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -85,9 +88,52 @@ func CreateToolBar(mainContainer *fyne.Container, a fyne.App, window fyne.Window
 			}
 			a.Preferences().SetString(utils.CATBOX_USERHASH, text)
 			fmt.Println("userhash blank")
+
+		}
+		durationStr := strconv.Itoa(fyne.CurrentApp().Preferences().IntWithFallback(utils.TIMEOUT_DURATION_MINUTES, utils.DEFAULT_FALLBACK_TIMEOUT_MINUTES))
+		durationBindingStr := binding.BindString(&durationStr)
+		timeoutEntry := widget.NewEntryWithData(durationBindingStr)
+		timeoutEntry.SetPlaceHolder("Timeout Duration Minutes")
+		
+		baseTimeoutNotif := fyne.NewNotification("Timeout", "")
+		timeoutEntry.OnChanged = func(s string) {
+			if s == "" {
+				timeoutEntry.SetValidationError(errors.New("timeout cannot be blank"))
+				return
+			}
+			re := regexp.MustCompile(`^\d+$`)
+			if re.MatchString(s) {
+				log.Println("reaching here")
+				return
+			} else {
+				log.Println("should be error")
+				timeoutEntry.SetValidationError(errors.New("duration must be a number"))
+				return
+			}
+
+		}
+		timeoutEntry.OnSubmitted = func(s string) {
+			if s == "" {
+				baseTimeoutNotif.Content = "Duration must not be blank"
+				fyne.CurrentApp().SendNotification(baseTimeoutNotif)
+				return
+			}
+			i, err := strconv.Atoi(s)
+			if err != nil {
+				baseTimeoutNotif.Title = baseTimeoutNotif.Title + " Error"
+				baseTimeoutNotif.Content = err.Error()
+				fyne.CurrentApp().SendNotification(baseTimeoutNotif)
+				return
+			}
+			if i > 0 {
+				a.Preferences().SetInt(utils.TIMEOUT_DURATION_MINUTES, i)
+				msg := fmt.Sprintf("Timeout set to %v minutes\n", a.Preferences().Int(utils.TIMEOUT_DURATION_MINUTES))
+				baseTimeoutNotif.Content = msg
+				fyne.CurrentApp().SendNotification(baseTimeoutNotif)
+			}
 		}
 
-		con := container.NewVBox(userHashEntry)
+		con := container.NewVBox(userHashEntry, timeoutEntry)
 		shortcutsLabel := widget.NewLabel("Shortcuts:\nCopy all links: Ctrl + E")
 		shortcutsLabel.Alignment = fyne.TextAlignCenter
 		shortcutsLabel.TextStyle.Bold = true
