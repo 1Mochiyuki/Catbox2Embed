@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 
@@ -22,6 +23,8 @@ func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 		KeyName:  fyne.KeyE,
 		Modifier: fyne.KeyModifierControl,
 	}
+	
+	
 	window.Canvas().AddShortcut(ctrlE, func(shortcut fyne.Shortcut) {
 		fmt.Println("copying links")
 		var links string
@@ -50,12 +53,14 @@ func addCopyAllLinksShortcut(window fyne.Window, con *fyne.Container) {
 }
 
 func main() {
-
 	a := app.NewWithID("Catbox2Embed")
-	window := a.NewWindow("Catbox2Embed")
+	title := fmt.Sprintf("Catbox2Embed v%v", a.Metadata().Version)
+	window := a.NewWindow(title)
 	window.Resize(fyne.NewSize(600, 500))
 	mainContainer := container.NewVBox()
-	fmt.Printf("timeout duration: %v minutes", a.Preferences().Int(utils.TIMEOUT_DURATION_MINUTES))
+	utils.CreateLogFile()
+	log.Println("Program started")
+	log.Printf("timeout duration: %v minutes", a.Preferences().Int(utils.TIMEOUT_DURATION_MINUTES))
 	copyAllToolbarAction := widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
 		var links string
 		for _, v := range mainContainer.Objects {
@@ -67,7 +72,7 @@ func main() {
 				}
 
 				links += uploadWidget.FileName.Label.Text + "\n"
-				fmt.Printf("current links: %v\n", links)
+				log.Printf("current links: %v\n", links)
 			}
 		}
 		window.Clipboard().SetContent(links)
@@ -96,8 +101,6 @@ func main() {
 
 	clearAllBtn.OnTapped = func() {
 		newSlice := mainContainer.Objects[3:]
-		fmt.Printf("len of mainContainer obj: %v\n", len(mainContainer.Objects))
-		fmt.Printf("len of new slice: %v\n", len(newSlice))
 
 		for i := 0; i < len(newSlice); i++ {
 			mainContainer.Remove(mainContainer.Objects[len(mainContainer.Objects)-1])
@@ -151,6 +154,8 @@ func main() {
 		window.SetContent(instructions)
 	}
 	window.SetOnClosed(func() {
+		
+		utils.CloseLogFile()
 		a.Quit()
 	})
 	window.ShowAndRun()
