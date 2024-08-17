@@ -70,12 +70,12 @@ func NewUploadFileSection(app fyne.App, window fyne.Window, con *fyne.Container,
 
 func uploadToCatbox(fileName *FileNameLabel) {
 	if fileName.Label.Text == DEFAULT_LABEL_TEXT {
-		fmt.Println("no file selected, not uploading")
+		log.Println("no file selected, not uploading")
 		return
 	}
 	file := fileName.Label.Text
 	filePath := fileName.AbsPath
-	fmt.Printf("uploading: %s\n", filePath)
+	log.Printf("uploading: %s\n", filePath)
 
 	catboxClient := catbox.New(nil)
 	catboxClient.Client.Timeout = time.Duration(fyne.CurrentApp().Preferences().IntWithFallback(utils.TIMEOUT_DURATION_MINUTES, utils.DEFAULT_FALLBACK_TIMEOUT_MINUTES)) * time.Minute
@@ -84,12 +84,12 @@ func uploadToCatbox(fileName *FileNameLabel) {
 	}
 	log.Printf("using userhash: %s", fyne.CurrentApp().Preferences().String(utils.CATBOX_USERHASH))
 	if url, err := catboxClient.Upload(filePath); err != nil {
-		fmt.Printf("\ncatbox: %v\n", err)
+		log.Printf("catbox: %v\n", err)
 		fyne.CurrentApp().SendNotification(fyne.NewNotification("Error Uploading", err.Error()))
 		return
 	} else {
 		embedLink := fmt.Sprintf("https://embeds.video/%s", url)
-		fmt.Printf("\nurl: %s\npath: %s", embedLink, filePath)
+		log.Printf("url: %s\npath: %s", embedLink, filePath)
 		fileName.Label.SetText(embedLink)
 		if utils.PreferencesEnabled() {
 			title := fmt.Sprintf("%s Upload Finished", file)
@@ -132,10 +132,9 @@ func NewFileUploadWidget(container *fyne.Container, startUploadButton, cancelUpl
 	}
 
 	openFileButton.OnTapped = func() {
-		fmt.Println("set open file tapped func")
 		filename, err := dialog.File().Filter("Video Files", utils.VIDEO_FILE_EXTENSIOSN...).Load()
 		if err != nil {
-			fmt.Printf("err: %v\n", err)
+			log.Printf("err: %v\n", err)
 			return
 		}
 		fileName.Label.SetText(filename)
